@@ -1,21 +1,15 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerBody : MonoBehaviour
 {
-    Vector2Int CORE = new Vector2Int(0, 0);
+    Vector2Int corePosition = new Vector2Int(0, 0);
 
     List<Vector2Int> pixels = new List<Vector2Int>();
 
     void Start()
     {
-        pixels.Add(CORE);
-    }
-
-    void Update()
-    {
-        
+        pixels.Add(corePosition);
     }
 
     public int GetPixelCount()
@@ -25,8 +19,14 @@ public class PlayerBody : MonoBehaviour
 
     public void Assimilate(WorldPixel pixel)
     {
+        Vector2Int pixelWorldPosition = pixel.GetGridPosition();
+        Vector2Int corePositionWorldPosition = new Vector2Int();
+
+        corePositionWorldPosition.x = Mathf.RoundToInt(transform.position.x);
+        corePositionWorldPosition.y = Mathf.RoundToInt(transform.position.y);
+        
+        Vector2Int relativePosition = pixelWorldPosition - corePositionWorldPosition;
         pixel.transform.SetParent(transform, true);
-        Vector2Int relativePosition = new Vector2Int(Mathf.RoundToInt(pixel.transform.localPosition.x), Mathf.RoundToInt(pixel.transform.localPosition.y));
         pixels.Add(relativePosition);
         Destroy(pixel);
     }
