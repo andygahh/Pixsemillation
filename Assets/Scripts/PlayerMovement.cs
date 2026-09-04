@@ -5,10 +5,16 @@ public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] WorldPixel worldPixel;
 
-    Vector2Int currentPosition = new Vector2Int(0, 0);
-    public static int pixelCount = 1;
+    PlayerBody playerBody;
 
-    // Update is called once per frame
+    Vector2Int currentPosition = new Vector2Int(0, 0);
+    Vector2Int destinationPosition;
+
+    void Start()
+    {
+        playerBody = GetComponent<PlayerBody>();
+    }
+
     void Update()
     {
         Vector2Int movement = new Vector2Int(0, 0);
@@ -35,29 +41,19 @@ public class PlayerMovement : MonoBehaviour
 
         if (movement.x != 0 || movement.y != 0)
         {
-            Vector2Int destinationPosition = currentPosition + movement;
+            destinationPosition = currentPosition + movement;
 
-            if (worldPixel != null)
+            if (worldPixel != null && CheckDestination(destinationPosition, worldPixel.GetGridPosition()))
             {
-                if (CheckDestination(destinationPosition, worldPixel.GetGridPosition()))
-                {
-                    pixelCount += 1;
-                    worldPixel.transform.SetParent(transform, true);
-                    Destroy(worldPixel);
-                }
-                else
-                {
-                    currentPosition = destinationPosition;
-                    transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
-                }
+                playerBody.Assimilate(worldPixel);
             }
             else
             {
                 currentPosition = destinationPosition;
                 transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
             }
-            
         }
+        
 
     }
 
@@ -65,4 +61,5 @@ public class PlayerMovement : MonoBehaviour
     {
         return player == pixel;
     }
+    
 }

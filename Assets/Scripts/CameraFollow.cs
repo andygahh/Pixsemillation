@@ -3,13 +3,14 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     [SerializeField] Transform targetTransform;
+    [SerializeField] PlayerBody playerBody;
 
     // Update is called once per frame
     void LateUpdate()
     {
         transform.position = new Vector3(targetTransform.position.x, targetTransform.position.y, transform.position.z);
 
-        int pixelCount = PlayerMovement.pixelCount;
+        int pixelCount = playerBody.GetPixelCount();
 
         float visibleGridSize = (pixelCount * 2) + 3;
 
