@@ -3,44 +3,66 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
+    [SerializeField] WorldPixel worldPixel;
 
-    int[] currentPosition = new int[] {0, 0};
-    int[] movement = new int[] {0, 0};
+    Vector2Int currentPosition = new Vector2Int(0, 0);
+    public static int pixelCount = 1;
 
     // Update is called once per frame
     void Update()
     {
-        movement[0] = 0;
-        movement[1] = 0;
+        Vector2Int movement = new Vector2Int(0, 0);
 
         if (Keyboard.current.wKey.wasPressedThisFrame)
         {
-            movement[1] += 1;
+            movement.y += 1;
         }
 
         if (Keyboard.current.sKey.wasPressedThisFrame)
         {
-            movement[1] -= 1;
+            movement.y -= 1;
         }
 
         if (Keyboard.current.aKey.wasPressedThisFrame)
         {
-            movement[0] -= 1;
+            movement.x -= 1;
         }
 
         if (Keyboard.current.dKey.wasPressedThisFrame)
         {
-            movement[0] += 1;
+            movement.x += 1;
         }
 
-        if (movement[0] != 0 || movement[1] != 0)
+        if (movement.x != 0 || movement.y != 0)
         {
-            currentPosition[0] += movement[0];
-            currentPosition[1] += movement[1];
+            Vector2Int destinationPosition = currentPosition + movement;
 
-            transform.position = new Vector3(currentPosition[0], currentPosition[1], 0);
+            if (worldPixel != null)
+            {
+                if (CheckDestination(destinationPosition, worldPixel.GetGridPosition()))
+                {
+                    pixelCount += 1;
+                    worldPixel.transform.SetParent(transform, true);
+                    Destroy(worldPixel);
+                }
+                else
+                {
+                    currentPosition = destinationPosition;
+                    transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
+                }
+            }
+            else
+            {
+                currentPosition = destinationPosition;
+                transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
+            }
+            
         }
 
+    }
 
+    private bool CheckDestination(Vector2Int player, Vector2Int pixel)
+    {
+        return player == pixel;
     }
 }
