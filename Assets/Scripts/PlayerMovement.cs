@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] WorldPixel worldPixel;
+    [SerializeField] List<WorldPixel> worldPixels;
 
     PlayerBody playerBody;
 
@@ -17,6 +20,8 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        List<Vector2Int> currentBodyPositions = playerBody.GetPixelPositions();
+
         Vector2Int movement = new Vector2Int(0, 0);
 
         if (Keyboard.current.wKey.wasPressedThisFrame)
@@ -39,13 +44,54 @@ public class PlayerMovement : MonoBehaviour
             movement.x += 1;
         }
 
+        if (Keyboard.current.eKey.wasPressedThisFrame)
+        {
+            playerBody.RotateClockwise();
+        }
+
+        if (Keyboard.current.qKey.wasPressedThisFrame)
+        {
+            playerBody.RotateCounterClockwise();
+        }
+
         if (movement.x != 0 || movement.y != 0)
         {
             destinationPosition = currentPosition + movement;
+            bool madeContact = false;
 
-            if (worldPixel != null && CheckDestination(destinationPosition, worldPixel.GetGridPosition()))
+            if (worldPixels.Count != 0)
             {
-                playerBody.Assimilate(worldPixel);
+                foreach (WorldPixel worldPixel in worldPixels)
+                {
+                    if (worldPixel == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (Vector2Int pixel in currentBodyPositions)
+                    {
+                        Debug.Log(pixel);
+                        
+                        Vector2Int proposedPosition = destinationPosition + pixel;
+
+                        if (CheckDestination(proposedPosition, worldPixel.GetGridPosition()))
+                        {
+                            playerBody.Assimilate(worldPixel);
+                            madeContact = true;
+                            break;
+                        }
+                    }
+
+                    if (madeContact)
+                    {
+                        break;
+                    }
+                }
+            }
+            
+            if (madeContact)
+            {
+                transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
             }
             else
             {
@@ -53,8 +99,6 @@ public class PlayerMovement : MonoBehaviour
                 transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
             }
         }
-        
-
     }
 
     private bool CheckDestination(Vector2Int player, Vector2Int pixel)
