@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [SerializeField] List<WorldPixel> worldPixels;
+    [SerializeField] List<WorldCluster> worldClusters;
 
     PlayerBody playerBody;
 
@@ -89,21 +89,27 @@ public class PlayerMovement : MonoBehaviour
     private bool CheckCollision(List<Vector2Int> currentBodyPositions, Vector2Int destinationPosition)
     {
         bool wouldOverlap = false;
-        foreach (WorldPixel worldPixel in worldPixels)
+
+        foreach (WorldCluster worldCluster in worldClusters)
         {
-            if (worldPixel == null)
+            if (worldCluster == null)
             {
                 continue;
             }
+            
+            List<Vector2Int> clusterWorldPositions = worldCluster.GetWorldPixelPositions();
 
             foreach (Vector2Int pixel in currentBodyPositions)
             {
                 Vector2Int proposedPosition = destinationPosition + pixel;
 
-                if (proposedPosition == worldPixel.GetGridPosition())
+                foreach (Vector2Int clusterPixel in clusterWorldPositions)
                 {
-                    wouldOverlap = true;
-                    break;
+                    if (proposedPosition == clusterPixel)
+                    {
+                        wouldOverlap = true;
+                        break;
+                    }
                 }
             }
         }
@@ -122,21 +128,31 @@ public class PlayerMovement : MonoBehaviour
     {
         bool madeContact = false;
 
-        foreach (WorldPixel worldPixel in worldPixels)
+        foreach (WorldCluster worldCluster in worldClusters)
         {
-            if (worldPixel == null)
+            if (worldCluster == null)
             {
                 continue;
             }
+
+            List<Vector2Int> clusterWorldPositions = worldCluster.GetWorldPixelPositions();
 
             foreach (Vector2Int pixel in currentBodyPositions)
             {
                 Vector2Int bodyCellPosition = currentPosition + pixel;
 
-                if (CheckAdjacent(bodyCellPosition, worldPixel.GetGridPosition()))
+                foreach (Vector2Int clusterPixel in clusterWorldPositions)
                 {
-                    playerBody.Assimilate(worldPixel);
-                    madeContact = true;
+                    if (CheckAdjacent(bodyCellPosition, clusterPixel))
+                    {
+                        playerBody.Assimilate(worldCluster);
+                        madeContact = true;
+                        break;
+                    }
+                }
+
+                if (madeContact)
+                {
                     break;
                 }
             }
@@ -147,5 +163,4 @@ public class PlayerMovement : MonoBehaviour
             }
         }
     }
-    
 }

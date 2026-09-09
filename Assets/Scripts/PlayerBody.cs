@@ -17,18 +17,24 @@ public class PlayerBody : MonoBehaviour
         return pixels.Count;
     }
 
-    public void Assimilate(WorldPixel pixel)
+    public void Assimilate(WorldCluster cluster)
     {
-        Vector2Int pixelWorldPosition = pixel.GetGridPosition();
+        List<Vector2Int> clusterWorldPositions = cluster.GetWorldPixelPositions();
         Vector2Int corePositionWorldPosition = new Vector2Int();
 
         corePositionWorldPosition.x = Mathf.RoundToInt(transform.position.x);
         corePositionWorldPosition.y = Mathf.RoundToInt(transform.position.y);
+
+        foreach (Vector2Int clusterWorldPosition in clusterWorldPositions)
+        {
+            Vector2Int relativePosition = clusterWorldPosition - corePositionWorldPosition;
+
+            pixels.Add(relativePosition);
+        }
         
-        Vector2Int relativePosition = pixelWorldPosition - corePositionWorldPosition;
-        pixel.transform.SetParent(transform, true);
-        pixels.Add(relativePosition);
-        Destroy(pixel);
+        cluster.transform.SetParent(transform, true);
+        
+        Destroy(cluster);
     }
 
     public List<Vector2Int> GetPixelPositions()
