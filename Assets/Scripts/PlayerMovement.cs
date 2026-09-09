@@ -7,6 +7,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] List<WorldCluster> worldClusters;
 
     PlayerBody playerBody;
+    DropMode dropMode;
 
     Vector2Int currentPosition = new Vector2Int(0, 0);
     
@@ -14,61 +15,71 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         playerBody = GetComponent<PlayerBody>();
+        dropMode = GetComponent<DropMode>();
     }
 
     void Update()
     {
-        List<Vector2Int> currentBodyPositions = playerBody.GetPixelPositions();
-
-        Vector2Int destinationPosition;
-        Vector2Int movement = new Vector2Int(0, 0);
-
-        if (Keyboard.current.wKey.wasPressedThisFrame)
+        if (dropMode.GetDropModeStatus())
         {
-            movement.y += 1;
+            return;
         }
-
-        if (Keyboard.current.sKey.wasPressedThisFrame)
+        else
         {
-            movement.y -= 1;
-        }
+            List<Vector2Int> currentBodyPositions = playerBody.GetPixelPositions();
 
-        if (Keyboard.current.aKey.wasPressedThisFrame)
-        {
-            movement.x -= 1;
-        }
+            Vector2Int destinationPosition;
+            Vector2Int movement = new Vector2Int(0, 0);
 
-        if (Keyboard.current.dKey.wasPressedThisFrame)
-        {
-            movement.x += 1;
-        }
-
-        if (Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            playerBody.RotateClockwise();
-            CheckForAssimilation(currentBodyPositions);
-        }
-
-        if (Keyboard.current.qKey.wasPressedThisFrame)
-        {
-            playerBody.RotateCounterClockwise();
-            CheckForAssimilation(currentBodyPositions);
-        }
-
-        if (movement.x != 0 || movement.y != 0)
-        {
-            destinationPosition = currentPosition + movement;
-            
-            bool wouldOverlap = CheckCollision(currentBodyPositions, destinationPosition);
-
-            if (!wouldOverlap)
+            if (Keyboard.current.wKey.wasPressedThisFrame)
             {
-                currentPosition = destinationPosition;
-                transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
+                movement.y += 1;
+            }
 
+            if (Keyboard.current.sKey.wasPressedThisFrame)
+            {
+                movement.y -= 1;
+            }
+
+            if (Keyboard.current.aKey.wasPressedThisFrame)
+            {
+                movement.x -= 1;
+            }
+
+            if (Keyboard.current.dKey.wasPressedThisFrame)
+            {
+                movement.x += 1;
+            }
+
+            if (Keyboard.current.eKey.wasPressedThisFrame)
+            {
+                playerBody.RotateClockwise();
                 CheckForAssimilation(currentBodyPositions);
             }
+
+            if (Keyboard.current.qKey.wasPressedThisFrame)
+            {
+                playerBody.RotateCounterClockwise();
+                CheckForAssimilation(currentBodyPositions);
+            }
+
+            if (movement.x != 0 || movement.y != 0)
+            {
+                destinationPosition = currentPosition + movement;
+                
+                bool wouldOverlap = CheckCollision(currentBodyPositions, destinationPosition);
+
+                if (!wouldOverlap)
+                {
+                    currentPosition = destinationPosition;
+                    transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
+
+                    CheckForAssimilation(currentBodyPositions);
+                }
+            }
         }
+
+        
     }
 
     private bool CheckAdjacent(Vector2Int bodyCell, Vector2Int pixel)
