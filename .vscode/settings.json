@@ -67,5 +67,8 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "Pixsemillation.slnx"
+    "dotnet.defaultSolution": "Pixsemillation.slnx",
+    "cSpell.words": [
+        "Adjacents"
+    ]
 }

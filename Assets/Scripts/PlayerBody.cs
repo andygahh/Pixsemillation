@@ -35,6 +35,8 @@ public class PlayerBody : MonoBehaviour
         cluster.transform.SetParent(transform, true);
         
         Destroy(cluster);
+
+        Debug.Log(pixels.Count);
     }
 
     public List<Vector2Int> GetPixelPositions()
