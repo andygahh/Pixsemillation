@@ -31,12 +31,13 @@ public class PlayerBody : MonoBehaviour
 
             pixels.Add(relativePosition);
         }
-        
-        cluster.transform.SetParent(transform, true);
-        
-        Destroy(cluster);
 
-        Debug.Log(pixels.Count);
+        foreach (Pixel child in cluster.GetComponentsInChildren<Pixel>())
+        {
+            child.transform.SetParent(transform, true);
+        }
+        
+        Destroy(cluster.gameObject);
     }
 
     public List<Vector2Int> GetPixelPositions()
@@ -73,6 +74,14 @@ public class PlayerBody : MonoBehaviour
             rotatedPosition.y = oldPosition.x;
 
             pixels[i] = rotatedPosition;
+        }
+    }
+
+    public void RemovePixels(List<Vector2Int> positionsToRemove)
+    {
+        foreach (Vector2Int pixel in positionsToRemove)
+        {
+            pixels.Remove(pixel);
         }
     }
 }

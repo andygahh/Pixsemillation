@@ -37,15 +37,9 @@ public class DropMode : MonoBehaviour
             {
                 if (ValidateSelection())
                 {
-                    Debug.Log("SELECTION VALID");
-                }
-                else
-                {
-                    Debug.Log("SELECTION INVALID");
+                    CreateDroppedCluster();
                 }
             }
-            
-            
         }
     }
 
@@ -54,25 +48,23 @@ public class DropMode : MonoBehaviour
         return isActive;
     }
     
-    public void EnterDropMode()
+    private void EnterDropMode()
     {
         Time.timeScale = 0;
         isActive = true;
 
         currentBody = GetComponent<PlayerBody>();
 
-        Debug.Log("DROP MODE ON");
     }
 
-    public void ExitDropMode()
+    private void ExitDropMode()
     {
         Time.timeScale = 1;
         isActive = false;
         ClearSelection();
-        Debug.Log("DROP MODE OFF");
     }
 
-    public void ClearSelection()
+    private void ClearSelection()
     {
         Pixel[] playerPixels = GetComponentsInChildren<Pixel>();
 
@@ -84,7 +76,7 @@ public class DropMode : MonoBehaviour
         pixelSelection.Clear();
     }
 
-    public void MakeSelection()
+    private void MakeSelection()
     {
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -97,23 +89,22 @@ public class DropMode : MonoBehaviour
             mouseGridPosition.x = Mathf.RoundToInt(mouseWorldPosition.x);
             mouseGridPosition.y = Mathf.RoundToInt(mouseWorldPosition.y);
 
-            Debug.Log(mouseGridPosition);
-
             hitCollider = Physics2D.OverlapPoint(mouseWorldPosition);
 
             if (hitCollider != null)
             {
-                Debug.Log(hitCollider.name);
-
                 if (hitCollider.transform.IsChildOf(transform))
                 {
-                    Debug.Log("Player pixel selected");
-                    
                     Vector2Int clickedPixelPosition = new Vector2Int();
                     Vector2Int playerCorePosition = new Vector2Int();
                     Vector2Int selectedPixelPosition = new Vector2Int();
 
                     Pixel pixel = hitCollider.GetComponent<Pixel>();
+
+                    if (pixel == null)
+                    {
+                        return;
+                    }
 
                     clickedPixelPosition.x = Mathf.RoundToInt(hitCollider.transform.position.x);
                     clickedPixelPosition.y = Mathf.RoundToInt(hitCollider.transform.position.y);
@@ -145,21 +136,15 @@ public class DropMode : MonoBehaviour
                     
                     
 
-                    Debug.Log(string.Join(", ", pixelSelection));
                 }
-            }
-            else
-            {
-                Debug.Log("Nothing There");
             }
         }
     }
 
-    public bool ValidateSelection()
+    private bool ValidateSelection()
     {
         if (pixelSelection.Count == 0)
         {
-            Debug.Log("NOTHING SELECTED");
             return false;
         }
         else
@@ -215,7 +200,7 @@ public class DropMode : MonoBehaviour
         List<Vector2Int> checkedPixels = new List<Vector2Int>();
         List<Vector2Int> pixelsToCheck = new List<Vector2Int>();
 
-        checkedPixels.Add(pixels[0]);
+        checkedPixels.Add(startingPosition);
         pixelsToCheck.Add(startingPosition);
 
         while (pixelsToCheck.Count != 0)
@@ -271,5 +256,54 @@ public class DropMode : MonoBehaviour
         };
 
         return adjacents;
+    }
+
+    private List<Pixel> FindSelectedPixelObjects()
+    {
+        Pixel[] bodyPixels = GetComponentsInChildren<Pixel>();
+        List<Pixel> selectedPixels = new List<Pixel>();
+
+        Vector2Int playerCorePosition = new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
+        Vector2Int currentPixelPosition = new Vector2Int();
+        Vector2Int relativePosition = new Vector2Int();
+
+        foreach (Pixel bodyPixel in bodyPixels)
+        {
+            currentPixelPosition.x = Mathf.RoundToInt(bodyPixel.transform.position.x);
+            currentPixelPosition.y = Mathf.RoundToInt(bodyPixel.transform.position.y);
+
+            relativePosition = currentPixelPosition - playerCorePosition;
+
+            if (pixelSelection.Contains(relativePosition))
+            {
+                selectedPixels.Add(bodyPixel);
+            }
+        }
+
+        return selectedPixels;
+    }
+
+    private void CreateDroppedCluster()
+    {
+        List<Pixel> selectedPixels = FindSelectedPixelObjects();
+
+        GameObject worldCluster = new GameObject("WorldCluster");
+
+        WorldCluster droppedCluster = worldCluster.AddComponent<WorldCluster>();
+
+        currentBody.RemovePixels(pixelSelection);
+
+        worldCluster.transform.position = selectedPixels[0].transform.position;
+
+        foreach (Pixel pixel in selectedPixels)
+        {
+            pixel.Deselect();
+            pixel.transform.SetParent(worldCluster.transform, true);
+        }
+
+        PlayerMovement playerMovement = GetComponent<PlayerMovement>();
+        playerMovement.AddWorldCluster(droppedCluster);
+
+        ClearSelection();
     }
 }
