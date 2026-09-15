@@ -14,7 +14,11 @@ public class PlayerMovement : MonoBehaviour
     Vector2Int currentPosition = new Vector2Int(0, 0);
     Vector2Int heldDirection = new Vector2Int(0, 0);
     Vector2Int previouslyHeldDirection = new Vector2Int(0, 0);
+
     float moveHoldTimer;
+    float inputCooldown = 0.15f;
+    float cooldownTimer = 0f;
+
     bool isRepeatingMovement;
 
 
@@ -38,6 +42,13 @@ public class PlayerMovement : MonoBehaviour
 
             Vector2Int destinationPosition;
             Vector2Int movement = new Vector2Int(0, 0);
+
+            float scrollInput = Mouse.current.scroll.ReadValue().y;
+
+            if (cooldownTimer > 0)
+            {
+                cooldownTimer -= Time.deltaTime;
+            }
 
             if (Keyboard.current.wKey.isPressed)
             {
@@ -96,20 +107,18 @@ public class PlayerMovement : MonoBehaviour
             }
 
 
-            if (Keyboard.current.eKey.wasPressedThisFrame)
+            if (Keyboard.current.eKey.wasPressedThisFrame || scrollInput > 0 && cooldownTimer <= 0)
             {
                 playerBody.RotateClockwise();
                 CheckForAssimilation(currentBodyPositions);
-
-                Debug.Log("Rotated");
+                cooldownTimer = inputCooldown;
             }
 
-            if (Keyboard.current.qKey.wasPressedThisFrame)
+            if (Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0 && cooldownTimer <= 0)
             {
                 playerBody.RotateCounterClockwise();
                 CheckForAssimilation(currentBodyPositions);
-
-                Debug.Log("Rotated");
+                cooldownTimer = inputCooldown;
             }
 
             if (movement.x != 0 || movement.y != 0)

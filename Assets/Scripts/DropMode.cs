@@ -33,7 +33,7 @@ public class DropMode : MonoBehaviour
         {
             MakeSelection();
 
-            if (Keyboard.current.enterKey.wasPressedThisFrame)
+            if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
             {
                 if (ValidateSelection())
                 {

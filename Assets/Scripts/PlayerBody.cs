@@ -3,13 +3,29 @@ using UnityEngine;
 
 public class PlayerBody : MonoBehaviour
 {
+    [SerializeField] float rotationSpeed;
+
     Vector2Int corePosition = new Vector2Int(0, 0);
 
     List<Vector2Int> pixels = new List<Vector2Int>();
 
+    float currentAngle;
+    float targetRotationAngle;
+
     void Start()
     {
+        targetRotationAngle = transform.eulerAngles.z;
+
         pixels.Add(corePosition);
+    }
+
+    void LateUpdate()
+    {
+        currentAngle = transform.eulerAngles.z;
+
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetRotationAngle, rotationSpeed * Time.deltaTime);
+
+        transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, newAngle);
     }
 
     public int GetPixelCount()
@@ -53,8 +69,6 @@ public class PlayerBody : MonoBehaviour
 
     public void RotateClockwise()
     {
-        transform.Rotate(0, 0, -90);
-
         for (int i = 0; i < pixels.Count; i++)
         {
             Vector2Int oldPosition = pixels[i];
@@ -65,12 +79,12 @@ public class PlayerBody : MonoBehaviour
 
             pixels[i] = rotatedPosition;
         }
+
+        targetRotationAngle -= 90;
     }
 
     public void RotateCounterClockwise()
     {
-        transform.Rotate(0, 0, 90);
-
         for (int i = 0; i < pixels.Count; i++)
         {
             Vector2Int oldPosition = pixels[i];
@@ -81,6 +95,8 @@ public class PlayerBody : MonoBehaviour
 
             pixels[i] = rotatedPosition;
         }
+
+        targetRotationAngle += 90;
     }
 
     public void RemovePixels(List<Vector2Int> positionsToRemove)
@@ -89,8 +105,6 @@ public class PlayerBody : MonoBehaviour
         {
             pixels.Remove(pixel);
         }
-
-        DebugPixelPositions();
     }
 
     public void DebugPixelPositions()

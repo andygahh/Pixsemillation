@@ -8,13 +8,13 @@ public class TestClusterSpawner : MonoBehaviour
 
     private readonly List<Vector2Int> occupiedPositions = new List<Vector2Int>();
 
-    private const int MAX_NUMBER_OF_CLUSTERS = 10;
+    private const int MAX_NUMBER_OF_CLUSTERS = 50;
     private const int MAX_CLUSTER_SIZE = 5;
 
-    private const int CEILING = 20;
-    private const int FLOOR = -20;
+    private const int CEILING = 40;
+    private const int FLOOR = -40;
 
-    private const int MAX_PLACEMENT_ATTEMPTS = 50;
+    private const int MAX_PLACEMENT_ATTEMPTS = 100;
 
     private readonly Vector2Int[] adjacents =
     {
