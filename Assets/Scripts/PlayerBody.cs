@@ -19,6 +19,9 @@ public class PlayerBody : MonoBehaviour
 
     public void Assimilate(WorldCluster cluster)
     {
+        Debug.Log("Before Assimilation");
+        DebugPixelPositions();
+
         List<Vector2Int> clusterWorldPositions = cluster.GetWorldPixelPositions();
         Vector2Int corePositionWorldPosition = new Vector2Int();
 
@@ -38,6 +41,9 @@ public class PlayerBody : MonoBehaviour
         }
         
         Destroy(cluster.gameObject);
+
+        Debug.Log("After Assimilation");
+        DebugPixelPositions();
     }
 
     public List<Vector2Int> GetPixelPositions()
@@ -83,5 +89,23 @@ public class PlayerBody : MonoBehaviour
         {
             pixels.Remove(pixel);
         }
+
+        DebugPixelPositions();
+    }
+
+    public void DebugPixelPositions()
+    {
+        HashSet<Vector2Int> uniquePositions = new HashSet<Vector2Int>();
+
+        foreach (Vector2Int pixel in pixels)
+        {
+            if (!uniquePositions.Add(pixel))
+            {
+                Debug.LogWarning("DUPLICATE POSITION: " + pixel);
+            }
+        }
+
+        Debug.Log("Total pixels: " + pixels.Count);
+        Debug.Log("Unique positions: " + uniquePositions.Count);
     }
 }

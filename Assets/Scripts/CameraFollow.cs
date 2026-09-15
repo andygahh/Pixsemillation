@@ -4,6 +4,7 @@ public class CameraFollow : MonoBehaviour
 {
     [SerializeField] Transform targetTransform;
     [SerializeField] PlayerBody playerBody;
+    [SerializeField] float zoomSpeed;
 
     void LateUpdate()
     {
@@ -15,6 +16,10 @@ public class CameraFollow : MonoBehaviour
 
         float targetOrthographicSize = visibleGridSize / 2;
 
-        Camera.main.orthographicSize = targetOrthographicSize;
+        float currentOrthographicSize = Camera.main.orthographicSize;
+
+        float newOrthographicSize = Mathf.MoveTowards(currentOrthographicSize, targetOrthographicSize, zoomSpeed * Time.deltaTime);
+
+        Camera.main.orthographicSize = newOrthographicSize;
     }
 }

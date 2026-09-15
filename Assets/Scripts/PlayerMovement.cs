@@ -5,12 +5,18 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] List<WorldCluster> worldClusters;
+    [SerializeField] float initialMoveDelay;
+    [SerializeField] float moveRepeatInterval;
 
     PlayerBody playerBody;
     DropMode dropMode;
 
     Vector2Int currentPosition = new Vector2Int(0, 0);
-    
+    Vector2Int heldDirection = new Vector2Int(0, 0);
+    Vector2Int previouslyHeldDirection = new Vector2Int(0, 0);
+    float moveHoldTimer;
+    bool isRepeatingMovement;
+
 
     void Start()
     {
@@ -26,118 +32,119 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
+            heldDirection = new Vector2Int(0, 0);
+
             List<Vector2Int> currentBodyPositions = playerBody.GetPixelPositions();
 
             Vector2Int destinationPosition;
             Vector2Int movement = new Vector2Int(0, 0);
 
-            if (Keyboard.current.wKey.wasPressedThisFrame)
+            if (Keyboard.current.wKey.isPressed)
             {
-                movement.y += 1;
+                heldDirection.y += 1;
             }
 
-            if (Keyboard.current.sKey.wasPressedThisFrame)
+            if (Keyboard.current.sKey.isPressed)
             {
-                movement.y -= 1;
+                heldDirection.y -= 1;
             }
 
-            if (Keyboard.current.aKey.wasPressedThisFrame)
+            if (Keyboard.current.aKey.isPressed)
             {
-                movement.x -= 1;
+                heldDirection.x -= 1;
             }
 
-            if (Keyboard.current.dKey.wasPressedThisFrame)
+            if (Keyboard.current.dKey.isPressed)
             {
-                movement.x += 1;
+                heldDirection.x += 1;
             }
+
+            if (heldDirection != previouslyHeldDirection)
+            {
+                movement = heldDirection;
+                moveHoldTimer = 0;
+                isRepeatingMovement = false;
+                previouslyHeldDirection = heldDirection;
+            }
+
+            if (heldDirection != Vector2Int.zero)
+            {
+                moveHoldTimer += Time.deltaTime;
+
+                if (!isRepeatingMovement)
+                {
+                    if (moveHoldTimer >= initialMoveDelay)
+                    {
+                        movement = heldDirection;
+                        moveHoldTimer = 0;
+                        isRepeatingMovement = true;
+                    }
+                }
+                else
+                {
+                    if (moveHoldTimer >= moveRepeatInterval)
+                    {
+                        movement = heldDirection;
+                        moveHoldTimer = 0;
+                    }
+                }
+            }
+            else
+            {
+                moveHoldTimer = 0;
+                isRepeatingMovement = false;
+            }
+
 
             if (Keyboard.current.eKey.wasPressedThisFrame)
             {
                 playerBody.RotateClockwise();
                 CheckForAssimilation(currentBodyPositions);
+
+                Debug.Log("Rotated");
             }
 
             if (Keyboard.current.qKey.wasPressedThisFrame)
             {
                 playerBody.RotateCounterClockwise();
                 CheckForAssimilation(currentBodyPositions);
+
+                Debug.Log("Rotated");
             }
 
             if (movement.x != 0 || movement.y != 0)
             {
                 destinationPosition = currentPosition + movement;
-                
-                bool wouldOverlap = CheckCollision(currentBodyPositions, destinationPosition);
 
-                if (!wouldOverlap)
+                List<WorldCluster> contactedClusters =
+                    FindClustersAtDestination(currentBodyPositions, destinationPosition);
+
+                if (contactedClusters.Count > 0)
+                {
+                    foreach (WorldCluster contactedCluster in contactedClusters)
+                    {
+                        playerBody.Assimilate(contactedCluster);
+                    }
+                }
+                else
                 {
                     currentPosition = destinationPosition;
-                    transform.position = new Vector3(currentPosition.x, currentPosition.y, 0);
 
-                    CheckForAssimilation(currentBodyPositions);
+                    transform.position = new Vector3(
+                        currentPosition.x,
+                        currentPosition.y,
+                        0
+                    );
                 }
             }
         }
-
-        
     }
 
-    private bool CheckAdjacent(Vector2Int bodyCell, Vector2Int pixel)
+    private List<WorldCluster> FindClustersAtDestination(
+        List<Vector2Int> currentBodyPositions,
+        Vector2Int destinationPosition)
     {
-        int differenceX = pixel.x - bodyCell.x;
-        int differenceY = pixel.y - bodyCell.y;
-
-        if (Mathf.Abs(differenceX) <= 1 && Mathf.Abs(differenceY) <= 1 && bodyCell != pixel)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    private bool CheckCollision(List<Vector2Int> currentBodyPositions, Vector2Int destinationPosition)
-    {
-        bool wouldOverlap = false;
-
-        foreach (WorldCluster worldCluster in worldClusters)
-        {
-            if (worldCluster == null)
-            {
-                continue;
-            }
-            
-            List<Vector2Int> clusterWorldPositions = worldCluster.GetWorldPixelPositions();
-
-            foreach (Vector2Int pixel in currentBodyPositions)
-            {
-                Vector2Int proposedPosition = destinationPosition + pixel;
-
-                foreach (Vector2Int clusterPixel in clusterWorldPositions)
-                {
-                    if (proposedPosition == clusterPixel)
-                    {
-                        wouldOverlap = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (wouldOverlap)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    private void CheckForAssimilation(List<Vector2Int> currentBodyPositions)
-    {
-        bool madeContact = false;
+        List<WorldCluster> contactedClusters = new List<WorldCluster>();
 
         foreach (WorldCluster worldCluster in worldClusters)
         {
@@ -146,34 +153,84 @@ public class PlayerMovement : MonoBehaviour
                 continue;
             }
 
-            List<Vector2Int> clusterWorldPositions = worldCluster.GetWorldPixelPositions();
+            List<Vector2Int> clusterWorldPositions =
+                worldCluster.GetWorldPixelPositions();
+
+            bool clusterContacted = false;
 
             foreach (Vector2Int pixel in currentBodyPositions)
             {
-                Vector2Int bodyCellPosition = currentPosition + pixel;
+                Vector2Int proposedBodyPosition =
+                    destinationPosition + pixel;
 
                 foreach (Vector2Int clusterPixel in clusterWorldPositions)
                 {
-                    if (CheckAdjacent(bodyCellPosition, clusterPixel))
+                    if (proposedBodyPosition == clusterPixel)
                     {
-                        playerBody.Assimilate(worldCluster);
-                        madeContact = true;
+                        contactedClusters.Add(worldCluster);
+                        clusterContacted = true;
                         break;
                     }
                 }
 
-                if (madeContact)
+                if (clusterContacted)
                 {
                     break;
                 }
             }
+        }
 
-            if (madeContact)
+        return contactedClusters;
+    }
+
+    private void CheckForAssimilation(List<Vector2Int> currentBodyPositions)
+{
+    List<WorldCluster> contactedClusters = new List<WorldCluster>();
+
+    foreach (WorldCluster worldCluster in worldClusters)
+    {
+        if (worldCluster == null)
+        {
+            continue;
+        }
+
+        List<Vector2Int> clusterWorldPositions =
+            worldCluster.GetWorldPixelPositions();
+
+        bool clusterContacted = false;
+
+        foreach (Vector2Int pixel in currentBodyPositions)
+        {
+            Vector2Int bodyCellPosition =
+                currentPosition + pixel;
+
+            foreach (Vector2Int clusterPixel in clusterWorldPositions)
+            {
+                int differenceX = clusterPixel.x - bodyCellPosition.x;
+                int differenceY = clusterPixel.y - bodyCellPosition.y;
+
+                if (Mathf.Abs(differenceX) <= 1 &&
+                    Mathf.Abs(differenceY) <= 1 &&
+                    bodyCellPosition != clusterPixel)
+                {
+                    contactedClusters.Add(worldCluster);
+                    clusterContacted = true;
+                    break;
+                }
+            }
+
+            if (clusterContacted)
             {
                 break;
             }
         }
     }
+
+    foreach (WorldCluster contactedCluster in contactedClusters)
+    {
+        playerBody.Assimilate(contactedCluster);
+    }
+}
 
     public void AddWorldCluster(WorldCluster cluster)
     {
