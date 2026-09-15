@@ -110,14 +110,12 @@ public class PlayerMovement : MonoBehaviour
             if (Keyboard.current.eKey.wasPressedThisFrame || scrollInput > 0 && cooldownTimer <= 0)
             {
                 playerBody.RotateClockwise();
-                CheckForAssimilation(currentBodyPositions);
                 cooldownTimer = inputCooldown;
             }
 
             if (Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0 && cooldownTimer <= 0)
             {
                 playerBody.RotateCounterClockwise();
-                CheckForAssimilation(currentBodyPositions);
                 cooldownTimer = inputCooldown;
             }
 
@@ -132,7 +130,10 @@ public class PlayerMovement : MonoBehaviour
                 {
                     foreach (WorldCluster contactedCluster in contactedClusters)
                     {
-                        playerBody.Assimilate(contactedCluster);
+                        if (playerBody.GetRotationStatus())
+                        {
+                            playerBody.Assimilate(contactedCluster);
+                        }
                     }
                 }
                 else

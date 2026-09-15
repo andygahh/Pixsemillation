@@ -12,6 +12,8 @@ public class PlayerBody : MonoBehaviour
     float currentAngle;
     float targetRotationAngle;
 
+    bool isVisualRotationComplete;
+
     void Start()
     {
         targetRotationAngle = transform.eulerAngles.z;
@@ -25,7 +27,18 @@ public class PlayerBody : MonoBehaviour
 
         float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetRotationAngle, rotationSpeed * Time.deltaTime);
 
-        transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, newAngle);
+        DoRotation(newAngle);
+
+        float angleDiff = Mathf.DeltaAngle(newAngle, targetRotationAngle);
+
+        if (Mathf.Abs(angleDiff) <= 0.01f)
+        {
+            isVisualRotationComplete = true;
+        }
+        else
+        {
+            isVisualRotationComplete = false;
+        }
     }
 
     public int GetPixelCount()
@@ -99,12 +112,22 @@ public class PlayerBody : MonoBehaviour
         targetRotationAngle += 90;
     }
 
+    public void DoRotation (float newAngle)
+    {
+        transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, newAngle);
+    }
+
     public void RemovePixels(List<Vector2Int> positionsToRemove)
     {
         foreach (Vector2Int pixel in positionsToRemove)
         {
             pixels.Remove(pixel);
         }
+    }
+
+    public bool GetRotationStatus ()
+    {
+        return isVisualRotationComplete;
     }
 
     public void DebugPixelPositions()
