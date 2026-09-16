@@ -12,7 +12,7 @@ public static class GridPhysics
         return Mathf.RoundToInt(distance);
     }
 
-    public static void Slap(RotationHit hit)
+    public static void Slap(RotationHit hit, List<WorldCluster> worldClusters)
     {
         if (hit != null)
         {
@@ -22,14 +22,45 @@ public static class GridPhysics
 
             int strength = CalculateRotationStrength(hit.strikingPixel.newPosition);
 
-            cluster.transform.position += GridMath.ConvertVector2Int(pushDirection);
+            for (int steps = 0; steps < strength; steps++)
+            {
+                bool isBlocked = false;
 
-            Debug.Log(
-                "SLAP | Cluster: " + cluster.name +
-                " | Direction: " + pushDirection +
-                " | Strength: " + strength +
-                " | Position: " + cluster.transform.position
-            );
+                foreach (WorldCluster worldCluster in worldClusters)
+                {
+                    if (worldCluster == null || worldCluster.Equals(cluster))
+                    {
+                        continue;
+                    }
+
+                    List<Vector2Int> clusterWorldPixelPositions = worldCluster.GetWorldPixelPositions();
+
+                    foreach (Vector2Int pixel in cluster.GetWorldPixelPositions())
+                    {
+                        Vector2Int pixelNextPosition = pixel + pushDirection;
+
+                        if (clusterWorldPixelPositions.Contains(pixelNextPosition))
+                        {
+                            isBlocked = true;
+                            break;
+                        }
+                    }
+
+                    if (isBlocked)
+                    {
+                        break;
+                    }
+                }
+
+                if (isBlocked)
+                {
+                    break;
+                }
+                else
+                {
+                    cluster.transform.position += GridMath.ConvertVector2Int(pushDirection);
+                }
+            }
         }
     }
 
@@ -44,8 +75,26 @@ public static class GridPhysics
 
     #region Positioning
 
-    public static bool IsClusterContact(Vector2Int oldPosition, Vector2Int newPosition, Vector2Int ClusterPosition)
+    public static bool IsClusterContact(Vector2Int oldPosition, Vector2Int newPosition, Vector2Int ClusterPosition, Vector2Int playerCorePosition)
     {
+        Vector2Int oldRelativePosition = oldPosition - playerCorePosition;
+        Vector2Int newRelativePosition = newPosition - playerCorePosition;
+        Vector2Int expectedClockwise = new Vector2Int(oldRelativePosition.y, -oldRelativePosition.x);
+
+        float radius = Mathf.Sqrt(Mathf.Pow(oldRelativePosition.x, 2) + Mathf.Pow(oldRelativePosition.y, 2));
+        float startAngle = Mathf.Atan2(oldRelativePosition.y, oldRelativePosition.x);
+
+        int rotationDirection;
+
+        if (newRelativePosition == expectedClockwise)
+        {
+            rotationDirection = -1;
+        }
+        else
+        {
+            rotationDirection = 1;
+        }
+
         if (newPosition == ClusterPosition)
         {
             return true;
@@ -58,14 +107,11 @@ public static class GridPhysics
 
         for (int step = 1; step < steps; step++)
         {
-            Vector2 samplePoint = new Vector2();
-
             float t = step / (float)steps;
+            float angleOffset = (Mathf.PI / 2) * t;
+            float sampleAngle = startAngle + rotationDirection * angleOffset;
 
-            samplePoint.x = Mathf.Lerp(oldPosition.x, newPosition.x, t);
-            samplePoint.y = Mathf.Lerp(oldPosition.y, newPosition.y, t);
-
-            Vector2Int sampleCell = Vector2Int.RoundToInt(samplePoint);
+            Vector2Int sampleCell = GridMath.GetGridPointOnCircle(sampleAngle, radius, playerCorePosition);
 
             if (sampleCell == ClusterPosition)
             {
@@ -110,7 +156,7 @@ public static class GridPhysics
 
             foreach (Vector2Int clusterPosition in clusterWorldPositions)
             {
-                if (IsClusterContact(oldWorldPosition, newWorldPosition, clusterPosition))
+                if (IsClusterContact(oldWorldPosition, newWorldPosition, clusterPosition, playerCore))
                 {
                     return movedPixel;
                 }
@@ -157,12 +203,6 @@ public static class GridPhysics
         direction.y = System.Math.Sign(delta.y);
 
         return direction;
-    }
-
-    public static void DebugClusterContact()
-    {
-        Debug.Log(IsClusterContact(new Vector2Int(4,0), new Vector2Int(0,-4), new Vector2Int(1,-4)));
-        Debug.Log(IsClusterContact(new Vector2Int(0,6), new Vector2Int(4,0), new Vector2Int(4,0)));
     }
 
     #endregion

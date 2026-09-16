@@ -24,6 +24,16 @@ public static class GridMath
         return vector3;
     }
 
+    public static Vector2Int GetGridPointOnCircle(float angleRadian, float radius, Vector2Int centerPosition)
+    {
+        Vector2Int newPosition = new Vector2Int();
+
+        newPosition.x = Mathf.RoundToInt(Mathf.Cos(angleRadian) * radius) + centerPosition.x;
+        newPosition.y = Mathf.RoundToInt(Mathf.Sin(angleRadian) * radius) + centerPosition.y;
+
+        return newPosition;
+    }
+
     public static List<Vector2Int> Adjacents() 
     {
         return new List<Vector2Int>

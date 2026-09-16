@@ -138,7 +138,7 @@ public class PlayerMovement : MonoBehaviour
                 worldClusters
             );
 
-            GridPhysics.Slap(hit);
+            GridPhysics.Slap(hit, worldClusters);
         }
 
         if (Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0 && cooldownTimer <= 0)
@@ -157,7 +157,7 @@ public class PlayerMovement : MonoBehaviour
                 worldClusters
             );
 
-            GridPhysics.Slap(hit);
+            GridPhysics.Slap(hit, worldClusters);
         }
 
         #endregion
