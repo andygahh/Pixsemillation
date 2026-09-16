@@ -112,3 +112,18 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# ---------------------------------
+# Pixsemilation project-specific
+# ---------------------------------
+
+# Local disposable test script
+/Assets/Scripts/Testing/TestStaticClass.cs
+/Assets/Scripts/Testing/TestStaticClass.cs.meta
+
+# VS Code workspace settings
+.vscode/
+
+# Windows junk
+Thumbs.db
+Desktop.ini
