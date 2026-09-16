@@ -11,6 +11,9 @@ public class PlayerMovement : MonoBehaviour
     PlayerBody playerBody;
     DropMode dropMode;
 
+    List<Vector2Int> oldBodyPositions;
+    List<Vector2Int> newBodyPositions;
+
     Vector2Int currentPosition = new Vector2Int(0, 0);
     Vector2Int heldDirection = new Vector2Int(0, 0);
     Vector2Int previouslyHeldDirection = new Vector2Int(0, 0);
@@ -34,91 +37,133 @@ public class PlayerMovement : MonoBehaviour
         {
             return;
         }
-        else
+        
+        #region Movement Definitions
+
+        heldDirection = new Vector2Int(0, 0);
+
+        List<Vector2Int> currentBodyPositions = playerBody.GetPixelPositions();
+
+        Vector2Int destinationPosition;
+        Vector2Int movement = new Vector2Int(0, 0);
+
+        float scrollInput = Mouse.current.scroll.ReadValue().y;
+
+        #endregion
+
+        if (cooldownTimer > 0)
         {
-            heldDirection = new Vector2Int(0, 0);
+            cooldownTimer -= Time.deltaTime;
+        }
 
-            List<Vector2Int> currentBodyPositions = playerBody.GetPixelPositions();
+        #region Get Held Direction
+        
+        if (Keyboard.current.wKey.isPressed)
+        {
+            heldDirection.y += 1;
+        }
 
-            Vector2Int destinationPosition;
-            Vector2Int movement = new Vector2Int(0, 0);
+        if (Keyboard.current.sKey.isPressed)
+        {
+            heldDirection.y -= 1;
+        }
 
-            float scrollInput = Mouse.current.scroll.ReadValue().y;
+        if (Keyboard.current.aKey.isPressed)
+        {
+            heldDirection.x -= 1;
+        }
 
-            if (cooldownTimer > 0)
+        if (Keyboard.current.dKey.isPressed)
+        {
+            heldDirection.x += 1;
+        }
+
+        #endregion
+
+        #region Basic Movement Calculation
+        
+        if (heldDirection != previouslyHeldDirection)
+        {
+            movement = heldDirection;
+            moveHoldTimer = 0;
+            isRepeatingMovement = false;
+            previouslyHeldDirection = heldDirection;
+        }
+
+        if (heldDirection != Vector2Int.zero)
+        {
+            moveHoldTimer += Time.deltaTime;
+
+            if (!isRepeatingMovement)
             {
-                cooldownTimer -= Time.deltaTime;
-            }
-
-            if (Keyboard.current.wKey.isPressed)
-            {
-                heldDirection.y += 1;
-            }
-
-            if (Keyboard.current.sKey.isPressed)
-            {
-                heldDirection.y -= 1;
-            }
-
-            if (Keyboard.current.aKey.isPressed)
-            {
-                heldDirection.x -= 1;
-            }
-
-            if (Keyboard.current.dKey.isPressed)
-            {
-                heldDirection.x += 1;
-            }
-
-            if (heldDirection != previouslyHeldDirection)
-            {
-                movement = heldDirection;
-                moveHoldTimer = 0;
-                isRepeatingMovement = false;
-                previouslyHeldDirection = heldDirection;
-            }
-
-            if (heldDirection != Vector2Int.zero)
-            {
-                moveHoldTimer += Time.deltaTime;
-
-                if (!isRepeatingMovement)
+                if (moveHoldTimer >= initialMoveDelay)
                 {
-                    if (moveHoldTimer >= initialMoveDelay)
-                    {
-                        movement = heldDirection;
-                        moveHoldTimer = 0;
-                        isRepeatingMovement = true;
-                    }
-                }
-                else
-                {
-                    if (moveHoldTimer >= moveRepeatInterval)
-                    {
-                        movement = heldDirection;
-                        moveHoldTimer = 0;
-                    }
+                    movement = heldDirection;
+                    moveHoldTimer = 0;
+                    isRepeatingMovement = true;
                 }
             }
             else
             {
-                moveHoldTimer = 0;
-                isRepeatingMovement = false;
+                if (moveHoldTimer >= moveRepeatInterval)
+                {
+                    movement = heldDirection;
+                    moveHoldTimer = 0;
+                }
             }
+        }
+        else
+        {
+            moveHoldTimer = 0;
+            isRepeatingMovement = false;
+        }
 
+        #endregion
 
-            if (Keyboard.current.eKey.wasPressedThisFrame || scrollInput > 0 && cooldownTimer <= 0)
-            {
-                playerBody.RotateClockwise();
-                cooldownTimer = inputCooldown;
-            }
+        #region Rotation Mechanics
+        
+        if (Keyboard.current.eKey.wasPressedThisFrame || scrollInput > 0 && cooldownTimer <= 0)
+        {
+            oldBodyPositions = new List<Vector2Int>(playerBody.GetPixelPositions());
 
-            if (Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0 && cooldownTimer <= 0)
-            {
-                playerBody.RotateCounterClockwise();
-                cooldownTimer = inputCooldown;
-            }
+            playerBody.RotateClockwise();
+            cooldownTimer = inputCooldown;
 
+            newBodyPositions = playerBody.GetPixelPositions();
+
+            RotationHit hit = GridPhysics.FindRotationHit(
+                oldBodyPositions,
+                newBodyPositions,
+                currentPosition,
+                worldClusters
+            );
+
+            GridPhysics.Slap(hit);
+        }
+
+        if (Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0 && cooldownTimer <= 0)
+        {
+            oldBodyPositions = new List<Vector2Int>(playerBody.GetPixelPositions());
+            
+            playerBody.RotateCounterClockwise();
+            cooldownTimer = inputCooldown;
+
+            newBodyPositions = playerBody.GetPixelPositions();
+
+            RotationHit hit = GridPhysics.FindRotationHit(
+                oldBodyPositions,
+                newBodyPositions,
+                currentPosition,
+                worldClusters
+            );
+
+            GridPhysics.Slap(hit);
+        }
+
+        #endregion
+
+        #region Basic Movement
+            
             if (movement.x != 0 || movement.y != 0)
             {
                 destinationPosition = currentPosition + movement;
@@ -140,14 +185,12 @@ public class PlayerMovement : MonoBehaviour
                 {
                     currentPosition = destinationPosition;
 
-                    transform.position = new Vector3(
-                        currentPosition.x,
-                        currentPosition.y,
-                        0
-                    );
+                    transform.position = GridMath.ConvertVector2Int(currentPosition);
                 }
             }
-        }
+
+            #endregion
+        
     }
 
     private List<WorldCluster> FindClustersAtDestination(
@@ -192,55 +235,6 @@ public class PlayerMovement : MonoBehaviour
 
         return contactedClusters;
     }
-
-    private void CheckForAssimilation(List<Vector2Int> currentBodyPositions)
-{
-    List<WorldCluster> contactedClusters = new List<WorldCluster>();
-
-    foreach (WorldCluster worldCluster in worldClusters)
-    {
-        if (worldCluster == null)
-        {
-            continue;
-        }
-
-        List<Vector2Int> clusterWorldPositions =
-            worldCluster.GetWorldPixelPositions();
-
-        bool clusterContacted = false;
-
-        foreach (Vector2Int pixel in currentBodyPositions)
-        {
-            Vector2Int bodyCellPosition =
-                currentPosition + pixel;
-
-            foreach (Vector2Int clusterPixel in clusterWorldPositions)
-            {
-                int differenceX = clusterPixel.x - bodyCellPosition.x;
-                int differenceY = clusterPixel.y - bodyCellPosition.y;
-
-                if (Mathf.Abs(differenceX) <= 1 &&
-                    Mathf.Abs(differenceY) <= 1 &&
-                    bodyCellPosition != clusterPixel)
-                {
-                    contactedClusters.Add(worldCluster);
-                    clusterContacted = true;
-                    break;
-                }
-            }
-
-            if (clusterContacted)
-            {
-                break;
-            }
-        }
-    }
-
-    foreach (WorldCluster contactedCluster in contactedClusters)
-    {
-        playerBody.Assimilate(contactedCluster);
-    }
-}
 
     public void AddWorldCluster(WorldCluster cluster)
     {

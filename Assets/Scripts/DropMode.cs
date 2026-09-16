@@ -29,18 +29,17 @@ public class DropMode : MonoBehaviour
         {
             return;
         }
-        else
-        {
-            MakeSelection();
+        
+        MakeSelection();
 
-            if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        {
+            if (ValidateSelection())
             {
-                if (ValidateSelection())
-                {
-                    CreateDroppedCluster();
-                }
+                CreateDroppedCluster();
             }
         }
+        
     }
 
     public bool GetDropModeStatus()
@@ -82,22 +81,18 @@ public class DropMode : MonoBehaviour
         {
             Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
             Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
-            Vector2Int mouseGridPosition = new Vector2Int();
 
             Collider2D hitCollider;
-
-            mouseGridPosition.x = Mathf.RoundToInt(mouseWorldPosition.x);
-            mouseGridPosition.y = Mathf.RoundToInt(mouseWorldPosition.y);
 
             hitCollider = Physics2D.OverlapPoint(mouseWorldPosition);
 
             if (hitCollider != null)
             {
-                if (hitCollider.transform.IsChildOf(transform))
+                if (hitCollider.transform.IsChildOf(transform)) 
                 {
-                    Vector2Int clickedPixelPosition = new Vector2Int();
-                    Vector2Int playerCorePosition = new Vector2Int();
-                    Vector2Int selectedPixelPosition = new Vector2Int();
+                    Vector2Int clickedPixelPosition;
+                    Vector2Int playerCorePosition;
+                    Vector2Int selectedPixelPosition;
 
                     Pixel pixel = hitCollider.GetComponent<Pixel>();
 
@@ -106,11 +101,9 @@ public class DropMode : MonoBehaviour
                         return;
                     }
 
-                    clickedPixelPosition.x = Mathf.RoundToInt(hitCollider.transform.position.x);
-                    clickedPixelPosition.y = Mathf.RoundToInt(hitCollider.transform.position.y);
+                    clickedPixelPosition = GridMath.ConvertVector3(hitCollider.transform.position);
 
-                    playerCorePosition.x = Mathf.RoundToInt(transform.position.x);
-                    playerCorePosition.y = Mathf.RoundToInt(transform.position.y);
+                    playerCorePosition = GridMath.ConvertVector3(transform.position);
 
                     selectedPixelPosition = clickedPixelPosition - playerCorePosition;
 
@@ -133,9 +126,6 @@ public class DropMode : MonoBehaviour
                         pixelSelection.Add(selectedPixelPosition);
                         pixel.Select();
                     }
-                    
-                    
-
                 }
             }
         }
@@ -147,14 +137,13 @@ public class DropMode : MonoBehaviour
         {
             return false;
         }
-        else
-        {
-            remainingOnBody = new List<Vector2Int>(currentBody.GetPixelPositions());
+        
+        remainingOnBody = new List<Vector2Int>(currentBody.GetPixelPositions());
 
-            BuildRemainingBody();
+        BuildRemainingBody();
 
-            return IsConnected(pixelSelection) && IsConnected(remainingOnBody, new Vector2Int (0,0));
-        }
+        return IsConnected(pixelSelection) && IsConnected(remainingOnBody, new Vector2Int (0,0));
+        
     }
 
     private void BuildRemainingBody()
@@ -184,7 +173,8 @@ public class DropMode : MonoBehaviour
                 {
                     continue;
                 }
-                else if (CheckAdjacent(current, pixels[i]))
+
+                if (CheckAdjacent(current, pixels[i]))
                 {
                     checkedPixels.Add(pixels[i]);
                     pixelsToCheck.Add(pixels[i]);
@@ -214,7 +204,8 @@ public class DropMode : MonoBehaviour
                 {
                     continue;
                 }
-                else if (CheckAdjacent(current, pixels[i]))
+                
+                if (CheckAdjacent(current, pixels[i]))
                 {
                     checkedPixels.Add(pixels[i]);
                     pixelsToCheck.Add(pixels[i]);
@@ -227,7 +218,7 @@ public class DropMode : MonoBehaviour
 
     private bool CheckAdjacent(Vector2Int pixel, Vector2Int selected)
     {
-        List<Vector2Int> adjacents = GetAdjacents();
+        List<Vector2Int> adjacents = GridMath.Adjacents();
 
         foreach (Vector2Int position in adjacents)
         {
@@ -240,37 +231,18 @@ public class DropMode : MonoBehaviour
         return false;
     }
 
-    private List<Vector2Int> GetAdjacents()
-    {
-        List<Vector2Int> adjacents = new List<Vector2Int>()
-        {
-            new Vector2Int(1,0),
-            new Vector2Int(-1,0),
-            new Vector2Int(0,1),
-            new Vector2Int(0,-1),
-
-            new Vector2Int(1,1),
-            new Vector2Int(1,-1),
-            new Vector2Int(-1,1),
-            new Vector2Int(-1,-1),
-        };
-
-        return adjacents;
-    }
-
     private List<Pixel> FindSelectedPixelObjects()
     {
         Pixel[] bodyPixels = GetComponentsInChildren<Pixel>();
         List<Pixel> selectedPixels = new List<Pixel>();
 
-        Vector2Int playerCorePosition = new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
+        Vector2Int playerCorePosition = GridMath.ConvertVector3(transform.position);
         Vector2Int currentPixelPosition = new Vector2Int();
         Vector2Int relativePosition = new Vector2Int();
 
         foreach (Pixel bodyPixel in bodyPixels)
         {
-            currentPixelPosition.x = Mathf.RoundToInt(bodyPixel.transform.position.x);
-            currentPixelPosition.y = Mathf.RoundToInt(bodyPixel.transform.position.y);
+            currentPixelPosition = GridMath.ConvertVector3(bodyPixel.transform.position);
 
             relativePosition = currentPixelPosition - playerCorePosition;
 

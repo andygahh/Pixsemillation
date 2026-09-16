@@ -3,25 +3,16 @@ using UnityEngine;
 
 public class WorldCluster : MonoBehaviour
 {
-    Vector2Int worldAnchor = new Vector2Int();
     List<Vector2Int> localPixelPositions = new List<Vector2Int>();
 
     void Start()
     {
-        worldAnchor.x = Mathf.RoundToInt(transform.position.x);
-        worldAnchor.y = Mathf.RoundToInt(transform.position.y);
-
         foreach (Transform child in transform)
         {
-            Vector2Int currentPosition = new Vector2Int();
-
-            currentPosition.x = Mathf.RoundToInt(child.localPosition.x);
-            currentPosition.y = Mathf.RoundToInt(child.localPosition.y);
+            Vector2Int currentPosition = GridMath.ConvertVector3(child.localPosition);
 
             localPixelPositions.Add(currentPosition);
         }
-        
-        
     }
 
     public List<Vector2Int> GetPixelPositions()
@@ -33,9 +24,11 @@ public class WorldCluster : MonoBehaviour
     {
         List<Vector2Int> worldPositions = new List<Vector2Int>();
 
+        Vector2Int currentAnchor = GridMath.ConvertVector3(transform.position);
+
         for (int i = 0; i < localPixelPositions.Count; i++)
         {
-            worldPositions.Add(localPixelPositions[i] + worldAnchor);
+            worldPositions.Add(localPixelPositions[i] + currentAnchor);
         }
 
         return worldPositions;

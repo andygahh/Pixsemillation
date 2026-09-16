@@ -43,7 +43,7 @@ public class TestClusterSpawner : MonoBehaviour
 
         GameObject clusterObject = new GameObject("WorldCluster");
         clusterObject.transform.position =
-            new Vector3(clusterPosition.x, clusterPosition.y, 0);
+            GridMath.ConvertVector2Int(clusterPosition);
 
         List<Vector2Int> localPixelPositions = new List<Vector2Int>();
 

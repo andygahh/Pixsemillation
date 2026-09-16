@@ -52,10 +52,7 @@ public class PlayerBody : MonoBehaviour
         DebugPixelPositions();
 
         List<Vector2Int> clusterWorldPositions = cluster.GetWorldPixelPositions();
-        Vector2Int corePositionWorldPosition = new Vector2Int();
-
-        corePositionWorldPosition.x = Mathf.RoundToInt(transform.position.x);
-        corePositionWorldPosition.y = Mathf.RoundToInt(transform.position.y);
+        Vector2Int corePositionWorldPosition = GridMath.ConvertVector3(transform.position);
 
         foreach (Vector2Int clusterWorldPosition in clusterWorldPositions)
         {
