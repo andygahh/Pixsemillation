@@ -5,6 +5,8 @@ public class WorldCluster : MonoBehaviour
 {
     List<Vector2Int> localPixelPositions = new List<Vector2Int>();
 
+    public int Mass => localPixelPositions.Count;
+
     void Start()
     {
         foreach (Transform child in transform)

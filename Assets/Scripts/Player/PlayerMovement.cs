@@ -173,11 +173,20 @@ public class PlayerMovement : MonoBehaviour
 
                 if (contactedClusters.Count > 0)
                 {
-                    foreach (WorldCluster contactedCluster in contactedClusters)
+                    if (Mouse.current.leftButton.isPressed)
                     {
-                        if (playerBody.GetRotationStatus())
+                        WorldCluster contactedCluster = contactedClusters[0];
+
+                        GridPhysics.MoveCluster(contactedCluster, movement, 1, worldClusters);
+                    }
+                    else
+                    {
+                        foreach (WorldCluster contactedCluster in contactedClusters)
                         {
-                            playerBody.Assimilate(contactedCluster);
+                            if (playerBody.GetRotationStatus())
+                            {
+                                playerBody.Assimilate(contactedCluster);
+                            }
                         }
                     }
                 }
@@ -189,7 +198,7 @@ public class PlayerMovement : MonoBehaviour
                 }
             }
 
-            #endregion
+        #endregion
         
     }
 

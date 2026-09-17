@@ -15,45 +15,7 @@ public static class GridPhysics
 
             int strength = CalculateRotationStrength(hit.strikingPixel.newPosition);
 
-            for (int steps = 0; steps < strength; steps++)
-            {
-                bool isBlocked = false;
-
-                foreach (WorldCluster worldCluster in worldClusters)
-                {
-                    if (worldCluster == null || worldCluster.Equals(cluster))
-                    {
-                        continue;
-                    }
-
-                    List<Vector2Int> clusterWorldPixelPositions = worldCluster.GetWorldPixelPositions();
-
-                    foreach (Vector2Int pixel in cluster.GetWorldPixelPositions())
-                    {
-                        Vector2Int pixelNextPosition = pixel + pushDirection;
-
-                        if (clusterWorldPixelPositions.Contains(pixelNextPosition))
-                        {
-                            isBlocked = true;
-                            break;
-                        }
-                    }
-
-                    if (isBlocked)
-                    {
-                        break;
-                    }
-                }
-
-                if (isBlocked)
-                {
-                    break;
-                }
-                else
-                {
-                    cluster.transform.position += GridMath.ConvertVector2Int(pushDirection);
-                }
-            }
+            MoveCluster(cluster, pushDirection, strength, worldClusters);
         }
     }
 
@@ -205,9 +167,79 @@ public static class GridPhysics
 
     #region Cluster Movement
 
-    public static void MoveCluster(WorldCluster cluster, Vector2Int direction, int strength, List<WorldCluster> worldClusters)
+    public static int MoveCluster(WorldCluster cluster, Vector2Int direction, int strength, List<WorldCluster> worldClusters)
     {
+        Debug.Log("Moving " + cluster.name + " with strength " + strength);
+
+        while (strength > 0)
+        {
+            WorldCluster blockingCluster = null;
+
+            bool isBlocked = false;
+
+            foreach (WorldCluster worldCluster in worldClusters)
+            {
+                if (worldCluster == null || worldCluster.Equals(cluster))
+                {
+                    continue;
+                }
+
+                List<Vector2Int> clusterWorldPixelPositions = worldCluster.GetWorldPixelPositions();
+
+                foreach (Vector2Int pixel in cluster.GetWorldPixelPositions())
+                {
+                    Vector2Int pixelNextPosition = pixel + direction;
+
+                    if (clusterWorldPixelPositions.Contains(pixelNextPosition))
+                    {
+                        blockingCluster = worldCluster;
+                        isBlocked = true;
+                        break;
+                    }
+                }
+
+                if (isBlocked)
+                {
+                    break;
+                }
+            }
+
+            if (isBlocked)
+            {
+                int movingMass = cluster.Mass;
+                int blockingMass = blockingCluster.Mass;
+
+                Debug.Log("Moving size: " + movingMass + " | Blocking size: " + blockingMass);
+
+                if (movingMass >= blockingMass)
+                {
+                    int movingStrength = Mathf.RoundToInt((float)strength * (movingMass - blockingMass) / (movingMass + blockingMass));
+                    int blockingStrength = Mathf.RoundToInt((float)strength * (2 * movingMass) / (movingMass + blockingMass));
+
+                    int remainingBlockingStrength = MoveCluster(blockingCluster, direction, blockingStrength, worldClusters);
+
+                    bool blockingClusterMoved = remainingBlockingStrength < blockingStrength;
+
+                    if (blockingClusterMoved && movingStrength > 0)
+                    {
+                        cluster.transform.position += GridMath.ConvertVector2Int(direction);
+                        strength = movingStrength - 1;
+                        continue;
+                    }
+                }
+                else
+                {
+                    Debug.Log("MERGE");
+                }
+
+                return strength;
+            }
+            
+            cluster.transform.position += GridMath.ConvertVector2Int(direction);
+            strength--;
+        }
         
+        return strength;
     }
 
     #endregion
