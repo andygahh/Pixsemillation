@@ -5,6 +5,8 @@ public class PlayerBody : MonoBehaviour
 {
     [SerializeField] float rotationSpeed;
 
+    PlayerMovement playerMovement;
+
     Vector2Int corePosition = new Vector2Int(0, 0);
 
     List<Vector2Int> pixels = new List<Vector2Int>();
@@ -16,6 +18,8 @@ public class PlayerBody : MonoBehaviour
 
     void Start()
     {
+        playerMovement = GetComponent<PlayerMovement>();
+
         targetRotationAngle = transform.eulerAngles.z;
 
         pixels.Add(corePosition);
@@ -65,6 +69,8 @@ public class PlayerBody : MonoBehaviour
         {
             child.transform.SetParent(transform, true);
         }
+
+        playerMovement.RemoveWorldCluster(cluster);
         
         Destroy(cluster.gameObject);
 

@@ -167,9 +167,9 @@ public static class GridPhysics
 
     #region Cluster Movement
 
-    public static int MoveCluster(WorldCluster cluster, Vector2Int direction, int strength, List<WorldCluster> worldClusters)
+    public static ClusterMoveResult MoveCluster(WorldCluster cluster, Vector2Int direction, int strength, List<WorldCluster> worldClusters)
     {
-        Debug.Log("Moving " + cluster.name + " with strength " + strength);
+        bool vacatedSpace = false;
 
         while (strength > 0)
         {
@@ -209,37 +209,64 @@ public static class GridPhysics
                 int movingMass = cluster.Mass;
                 int blockingMass = blockingCluster.Mass;
 
-                Debug.Log("Moving size: " + movingMass + " | Blocking size: " + blockingMass);
-
                 if (movingMass >= blockingMass)
                 {
                     int movingStrength = Mathf.RoundToInt((float)strength * (movingMass - blockingMass) / (movingMass + blockingMass));
                     int blockingStrength = Mathf.RoundToInt((float)strength * (2 * movingMass) / (movingMass + blockingMass));
 
-                    int remainingBlockingStrength = MoveCluster(blockingCluster, direction, blockingStrength, worldClusters);
+                    ClusterMoveResult blockingResult = MoveCluster(blockingCluster, direction, blockingStrength, worldClusters);
 
-                    bool blockingClusterMoved = remainingBlockingStrength < blockingStrength;
+                    bool blockingClusterMoved = blockingResult.vacatedSpace;
 
                     if (blockingClusterMoved && movingStrength > 0)
                     {
                         cluster.transform.position += GridMath.ConvertVector2Int(direction);
+                        vacatedSpace = true;
                         strength = movingStrength - 1;
                         continue;
                     }
                 }
                 else
                 {
-                    Debug.Log("MERGE");
+                    List<Transform> childToMerge = new List<Transform>();
+
+                    foreach (Transform childTransform in cluster.transform)
+                    {
+                        childToMerge.Add(childTransform);
+                    }
+
+                    foreach (Transform child in childToMerge)
+                    {
+                        child.SetParent(blockingCluster.transform, true);
+                    }
+
+                    blockingCluster.RefreshCluster();
+
+                    vacatedSpace = true;
+
+                    worldClusters.Remove(cluster);
+                    UnityEngine.Object.Destroy(cluster.gameObject);
                 }
 
-                return strength;
+                ClusterMoveResult movedResult = new ClusterMoveResult();
+
+                movedResult.remainingStrength = strength;
+                movedResult.vacatedSpace = vacatedSpace;
+
+                return movedResult;
             }
             
             cluster.transform.position += GridMath.ConvertVector2Int(direction);
+            vacatedSpace = true;
             strength--;
         }
+
+        ClusterMoveResult result = new ClusterMoveResult();
+
+        result.remainingStrength = strength;
+        result.vacatedSpace = vacatedSpace;
         
-        return strength;
+        return result;
     }
 
     #endregion
@@ -255,4 +282,10 @@ public class RotationHit
 {
     public MovedPixel strikingPixel {get; set;}
     public WorldCluster struckCluster {get; set;}
+}
+
+public class ClusterMoveResult
+{
+    public int remainingStrength {get; set;}
+    public bool vacatedSpace {get; set;}
 }

@@ -122,7 +122,7 @@ public class PlayerMovement : MonoBehaviour
 
         #region Rotation Mechanics
         
-        if (Keyboard.current.eKey.wasPressedThisFrame || scrollInput > 0 && cooldownTimer <= 0)
+        if ((Keyboard.current.eKey.wasPressedThisFrame || scrollInput > 0) && cooldownTimer <= 0)
         {
             oldBodyPositions = new List<Vector2Int>(playerBody.GetPixelPositions());
 
@@ -141,7 +141,7 @@ public class PlayerMovement : MonoBehaviour
             GridPhysics.Slap(hit, worldClusters);
         }
 
-        if (Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0 && cooldownTimer <= 0)
+        if ((Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0) && cooldownTimer <= 0)
         {
             oldBodyPositions = new List<Vector2Int>(playerBody.GetPixelPositions());
             
@@ -248,5 +248,10 @@ public class PlayerMovement : MonoBehaviour
     public void AddWorldCluster(WorldCluster cluster)
     {
         worldClusters.Add(cluster);
+    }
+
+    public void RemoveWorldCluster(WorldCluster cluster)
+    {
+        worldClusters.Remove(cluster);
     }
 }

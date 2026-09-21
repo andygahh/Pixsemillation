@@ -2,106 +2,59 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class ClusterCollisionTester : MonoBehaviour
+public class MergeChainTester : MonoBehaviour
 {
     [SerializeField] GameObject pixelPrefab;
 
     List<WorldCluster> worldClusters = new List<WorldCluster>();
 
-    WorldCluster equalMoving;
-    WorldCluster equalBlocking;
+    WorldCluster clusterA;
+    WorldCluster clusterB;
+    WorldCluster clusterC;
 
-    WorldCluster heavyMoving;
-    WorldCluster lightBlocking;
-
-    WorldCluster mediumMoving;
-    WorldCluster smallBlocking;
-
-    WorldCluster chainA;
-    WorldCluster chainB;
-    WorldCluster chainC;
-
-    int currentTest = 0;
+    bool testRun = false;
 
     void Start()
     {
-        BuildTests();
+        BuildTest();
     }
 
     void Update()
     {
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (Keyboard.current.spaceKey.wasPressedThisFrame && !testRun)
         {
-            RunNextTest();
-        }
-
-        if (Keyboard.current.rKey.wasPressedThisFrame)
-        {
-            ResetTests();
+            RunTest();
+            testRun = true;
         }
     }
 
-    void BuildTests()
+    void BuildTest()
     {
-        // TEST 1
-        equalMoving = CreateCluster(
-            "Equal Moving - Mass 3",
-            new Vector2Int(-8, 6),
-            3
-        );
+        /*
+         * A: Mass 5, x = 0
+         * B: Mass 3, x = 3
+         * C: Mass 6, x = 5
+         *
+         * A is large enough to PUSH B.
+         * B is smaller than C, so B should MERGE into C.
+         */
 
-        equalBlocking = CreateCluster(
-            "Equal Blocking - Mass 3",
-            new Vector2Int(-4, 6),
-            3
-        );
-
-
-        // TEST 2
-        heavyMoving = CreateCluster(
-            "Heavy Moving - Mass 5",
-            new Vector2Int(-8, 1),
-            5
-        );
-
-        lightBlocking = CreateCluster(
-            "Light Blocking - Mass 2",
-            new Vector2Int(-4, 1),
-            2
-        );
-
-
-        // TEST 3
-        mediumMoving = CreateCluster(
-            "Medium Moving - Mass 4",
-            new Vector2Int(2, 6),
-            4
-        );
-
-        smallBlocking = CreateCluster(
-            "Small Blocking - Mass 2",
-            new Vector2Int(6, 6),
-            2
-        );
-
-
-        // TEST 4
-        chainA = CreateCluster(
+        clusterA = CreateCluster(
             "Chain A - Mass 5",
-            new Vector2Int(2, -3),
+            new Vector2Int(0, 0),
             5
         );
 
-        chainB = CreateCluster(
+        clusterB = CreateCluster(
             "Chain B - Mass 3",
-            new Vector2Int(6, -3),
+            new Vector2Int(3, 0),
             3
         );
 
-        chainC = CreateCluster(
-            "Chain C - Mass 2",
-            new Vector2Int(9, -3),
-            2
+        clusterC = CreateCluster(
+            "Chain C - Mass 6",
+            new Vector2Int(5, 0),
+            6
         );
     }
 
@@ -115,6 +68,7 @@ public class ClusterCollisionTester : MonoBehaviour
         root.transform.position =
             GridMath.ConvertVector2Int(anchor);
 
+        // Vertical clusters keep horizontal collision math simple.
         for (int i = 0; i < mass; i++)
         {
             GameObject pixel =
@@ -134,161 +88,98 @@ public class ClusterCollisionTester : MonoBehaviour
         return cluster;
     }
 
-    void RunNextTest()
+    void RunTest()
     {
-        switch (currentTest)
+        Debug.Log("=== MERGE CHAIN TEST ===");
+
+        Vector2Int aStart =
+            GridMath.ConvertVector3(clusterA.transform.position);
+
+        Vector2Int bStart =
+            GridMath.ConvertVector3(clusterB.transform.position);
+
+        Vector2Int cStart =
+            GridMath.ConvertVector3(clusterC.transform.position);
+
+        Debug.Log(
+            "START | A: " + aStart +
+            " | B: " + bStart +
+            " | C: " + cStart
+        );
+
+        Debug.Log(
+            "START MASS | A: " + clusterA.Mass +
+            " | B: " + clusterB.Mass +
+            " | C: " + clusterC.Mass
+        );
+
+        ClusterMoveResult result =
+            GridPhysics.MoveCluster(
+                clusterA,
+                Vector2Int.right,
+                6,
+                worldClusters
+            );
+
+        Vector2Int aFinal =
+            GridMath.ConvertVector3(clusterA.transform.position);
+
+        Vector2Int cFinal =
+            GridMath.ConvertVector3(clusterC.transform.position);
+
+        Debug.Log(
+            "FINAL | A: " + aFinal +
+            " | C: " + cFinal
+        );
+
+        Debug.Log(
+            "FINAL C MASS: " + clusterC.Mass
+        );
+
+        Debug.Log(
+            "WORLD CLUSTER COUNT: " + worldClusters.Count
+        );
+
+        Debug.Log(
+            "A RESULT | Vacated: " + result.vacatedSpace +
+            " | Remaining Strength: " + result.remainingStrength
+        );
+
+        bool aMovedIntoBPosition =
+            aFinal == new Vector2Int(3, 0);
+
+        bool mergeMassCorrect =
+            clusterC.Mass == 9;
+
+        bool oldClusterRemoved =
+            worldClusters.Count == 2;
+
+        Debug.Log(
+            "A moved into B's old position: " +
+            aMovedIntoBPosition
+        );
+
+        Debug.Log(
+            "B merged into C correctly: " +
+            mergeMassCorrect
+        );
+
+        Debug.Log(
+            "B removed from worldClusters: " +
+            oldClusterRemoved
+        );
+
+        if (
+            aMovedIntoBPosition &&
+            mergeMassCorrect &&
+            oldClusterRemoved
+        )
         {
-            case 0:
-                Debug.Log(
-                    "=== TEST 1 === Mass 3 -> Mass 3 | Strength 6"
-                );
-
-                GridPhysics.MoveCluster(
-                    equalMoving,
-                    Vector2Int.right,
-                    6,
-                    worldClusters
-                );
-
-                break;
-
-
-            case 1:
-                Debug.Log(
-                    "=== TEST 2 === Mass 5 -> Mass 2 | Strength 6"
-                );
-
-                GridPhysics.MoveCluster(
-                    heavyMoving,
-                    Vector2Int.right,
-                    6,
-                    worldClusters
-                );
-
-                break;
-
-
-            case 2:
-                Debug.Log(
-                    "=== TEST 3 === Mass 4 -> Mass 2 | Strength 5"
-                );
-
-                GridPhysics.MoveCluster(
-                    mediumMoving,
-                    Vector2Int.right,
-                    5,
-                    worldClusters
-                );
-
-                break;
-
-
-            case 3:
-                Debug.Log(
-                    "=== TEST 4 === Recursive Chain | 5 -> 3 -> 2 | Strength 8"
-                );
-
-                Vector2Int aStart =
-                    GridMath.ConvertVector3(chainA.transform.position);
-
-                Vector2Int bStart =
-                    GridMath.ConvertVector3(chainB.transform.position);
-
-                Vector2Int cStart =
-                    GridMath.ConvertVector3(chainC.transform.position);
-
-
-                GridPhysics.MoveCluster(
-                    chainA,
-                    Vector2Int.right,
-                    8,
-                    worldClusters
-                );
-
-
-                Vector2Int aFinal =
-                    GridMath.ConvertVector3(chainA.transform.position);
-
-                Vector2Int bFinal =
-                    GridMath.ConvertVector3(chainB.transform.position);
-
-                Vector2Int cFinal =
-                    GridMath.ConvertVector3(chainC.transform.position);
-
-
-                Debug.Log(
-                    "CHAIN RESULTS\n" +
-                    "A: " + aStart + " -> " + aFinal + "\n" +
-                    "B: " + bStart + " -> " + bFinal + "\n" +
-                    "C: " + cStart + " -> " + cFinal
-                );
-
-                break;
-
-
-            default:
-                Debug.Log(
-                    "All collision tests finished. Press R to reset."
-                );
-
-                return;
+            Debug.Log("=== TEST PASSED ===");
         }
-
-        currentTest++;
-    }
-
-    void ResetTests()
-    {
-        equalMoving.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(-8, 6)
-            );
-
-        equalBlocking.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(-4, 6)
-            );
-
-
-        heavyMoving.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(-8, 1)
-            );
-
-        lightBlocking.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(-4, 1)
-            );
-
-
-        mediumMoving.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(2, 6)
-            );
-
-        smallBlocking.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(6, 6)
-            );
-
-
-        chainA.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(2, -3)
-            );
-
-        chainB.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(6, -3)
-            );
-
-        chainC.transform.position =
-            GridMath.ConvertVector2Int(
-                new Vector2Int(9, -3)
-            );
-
-        currentTest = 0;
-
-        Debug.Log("Collision tests reset.");
+        else
+        {
+            Debug.LogError("=== TEST FAILED ===");
+        }
     }
 }
