@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Numerics;
 using UnityEngine;
 
 public class PlayerBody : MonoBehaviour
@@ -83,6 +84,22 @@ public class PlayerBody : MonoBehaviour
         return pixels;
     }
 
+    public HashSet<Vector2Int> GetWorldPixelPositions()
+    {
+        HashSet<Vector2Int> positions = new HashSet<Vector2Int>();
+
+        Vector2Int coreWorldPosition = GridMath.ConvertVector3(transform.position);
+        
+        positions.Add(coreWorldPosition);
+
+        foreach (Vector2Int pixel in pixels)
+        {
+            positions.Add(coreWorldPosition + pixel);
+        }
+
+        return positions;
+    }
+
     public void RotateClockwise()
     {
         for (int i = 0; i < pixels.Count; i++)
@@ -117,7 +134,7 @@ public class PlayerBody : MonoBehaviour
 
     public void DoRotation (float newAngle)
     {
-        transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, newAngle);
+        transform.rotation = UnityEngine.Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, newAngle);
     }
 
     public void RemovePixels(List<Vector2Int> positionsToRemove)

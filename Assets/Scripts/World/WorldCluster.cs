@@ -3,13 +3,23 @@ using UnityEngine;
 
 public class WorldCluster : MonoBehaviour
 {
+    [SerializeField] float movementSpeed = 10f;
+
     HashSet<Vector2Int> localPixelPositions = new HashSet<Vector2Int>();
 
     public int Mass => localPixelPositions.Count;
 
+    public Vector2Int logicalWorldPosition;
+
     void Start()
     {
+        logicalWorldPosition = GridMath.ConvertVector3(transform.position);
         RefreshCluster();
+    }
+
+    void LateUpdate()
+    {
+        DoAnimation();
     }
 
     public List<Vector2Int> GetPixelPositions()
@@ -21,11 +31,9 @@ public class WorldCluster : MonoBehaviour
     {
         List<Vector2Int> worldPositions = new List<Vector2Int>();
 
-        Vector2Int currentAnchor = GridMath.ConvertVector3(transform.position);
-
         foreach (Vector2Int position in localPixelPositions)
         {
-            worldPositions.Add(position + currentAnchor);
+            worldPositions.Add(position + logicalWorldPosition);
         }
 
         return worldPositions;
@@ -40,6 +48,23 @@ public class WorldCluster : MonoBehaviour
             Vector2Int currentPosition = GridMath.ConvertVector3(child.localPosition);
 
             localPixelPositions.Add(currentPosition);
+        }
+    }
+
+    private void DoAnimation()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, GridMath.ConvertVector2Int(logicalWorldPosition), movementSpeed * Time.deltaTime);
+    }
+
+    public bool GetMovementStatus()
+    {
+        if (transform.position == GridMath.ConvertVector2Int(logicalWorldPosition))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 }

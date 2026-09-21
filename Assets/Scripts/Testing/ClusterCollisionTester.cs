@@ -118,7 +118,8 @@ public class MergeChainTester : MonoBehaviour
                 clusterA,
                 Vector2Int.right,
                 6,
-                worldClusters
+                worldClusters,
+                new HashSet<Vector2Int>()
             );
 
         Vector2Int aFinal =

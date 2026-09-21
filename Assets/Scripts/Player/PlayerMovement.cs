@@ -138,7 +138,15 @@ public class PlayerMovement : MonoBehaviour
                 worldClusters
             );
 
-            GridPhysics.Slap(hit, worldClusters);
+            GridPhysics.Slap(hit, worldClusters, playerBody.GetWorldPixelPositions());
+            
+            foreach (WorldCluster cluster in worldClusters)
+            {
+                if (cluster != null)
+                {
+                    GridPhysics.FloatClusterToLegalPosition(cluster, worldClusters, playerBody.GetWorldPixelPositions());
+                }
+            }
         }
 
         if ((Keyboard.current.qKey.wasPressedThisFrame || scrollInput < 0) && cooldownTimer <= 0)
@@ -157,7 +165,15 @@ public class PlayerMovement : MonoBehaviour
                 worldClusters
             );
 
-            GridPhysics.Slap(hit, worldClusters);
+            GridPhysics.Slap(hit, worldClusters, playerBody.GetWorldPixelPositions());
+
+            foreach (WorldCluster cluster in worldClusters)
+            {
+                if (cluster != null)
+                {
+                    GridPhysics.FloatClusterToLegalPosition(cluster, worldClusters, playerBody.GetWorldPixelPositions());
+                }
+            }
         }
 
         #endregion
@@ -177,13 +193,13 @@ public class PlayerMovement : MonoBehaviour
                     {
                         WorldCluster contactedCluster = contactedClusters[0];
 
-                        GridPhysics.MoveCluster(contactedCluster, movement, 1, worldClusters);
+                        GridPhysics.MoveCluster(contactedCluster, movement, 1, worldClusters, playerBody.GetWorldPixelPositions());
                     }
                     else
                     {
                         foreach (WorldCluster contactedCluster in contactedClusters)
                         {
-                            if (playerBody.GetRotationStatus())
+                            if (playerBody.GetRotationStatus() && contactedCluster.GetMovementStatus())
                             {
                                 playerBody.Assimilate(contactedCluster);
                             }

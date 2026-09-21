@@ -5,7 +5,7 @@ public static class GridPhysics
 {
     #region Rotation Actions
 
-    public static void Slap(RotationHit hit, List<WorldCluster> worldClusters)
+    public static void Slap(RotationHit hit, List<WorldCluster> worldClusters, HashSet<Vector2Int> playerWorldPositions)
     {
         if (hit != null)
         {
@@ -15,7 +15,7 @@ public static class GridPhysics
 
             int strength = CalculateRotationStrength(hit.strikingPixel.newPosition);
 
-            MoveCluster(cluster, pushDirection, strength, worldClusters);
+            MoveCluster(cluster, pushDirection, strength, worldClusters, playerWorldPositions);
         }
     }
 
@@ -167,7 +167,7 @@ public static class GridPhysics
 
     #region Cluster Movement
 
-    public static ClusterMoveResult MoveCluster(WorldCluster cluster, Vector2Int direction, int strength, List<WorldCluster> worldClusters)
+    public static ClusterMoveResult MoveCluster(WorldCluster cluster, Vector2Int direction, int strength, List<WorldCluster> worldClusters, HashSet<Vector2Int> playerWorldPositions)
     {
         bool vacatedSpace = false;
 
@@ -176,6 +176,16 @@ public static class GridPhysics
             WorldCluster blockingCluster = null;
 
             bool isBlocked = false;
+
+            foreach (Vector2Int position in cluster.GetWorldPixelPositions())
+            {
+                Vector2Int pixelNextPosition = position + direction;
+
+                if (playerWorldPositions.Contains(pixelNextPosition))
+                {
+                    return new ClusterMoveResult(strength, vacatedSpace);
+                }
+            }
 
             foreach (WorldCluster worldCluster in worldClusters)
             {
@@ -214,13 +224,13 @@ public static class GridPhysics
                     int movingStrength = Mathf.RoundToInt((float)strength * (movingMass - blockingMass) / (movingMass + blockingMass));
                     int blockingStrength = Mathf.RoundToInt((float)strength * (2 * movingMass) / (movingMass + blockingMass));
 
-                    ClusterMoveResult blockingResult = MoveCluster(blockingCluster, direction, blockingStrength, worldClusters);
+                    ClusterMoveResult blockingResult = MoveCluster(blockingCluster, direction, blockingStrength, worldClusters, playerWorldPositions);
 
                     bool blockingClusterMoved = blockingResult.vacatedSpace;
 
                     if (blockingClusterMoved && movingStrength > 0)
                     {
-                        cluster.transform.position += GridMath.ConvertVector2Int(direction);
+                        cluster.logicalWorldPosition += direction;
                         vacatedSpace = true;
                         strength = movingStrength - 1;
                         continue;
@@ -248,25 +258,99 @@ public static class GridPhysics
                     UnityEngine.Object.Destroy(cluster.gameObject);
                 }
 
-                ClusterMoveResult movedResult = new ClusterMoveResult();
-
-                movedResult.remainingStrength = strength;
-                movedResult.vacatedSpace = vacatedSpace;
-
-                return movedResult;
+                return new ClusterMoveResult(strength, vacatedSpace);
             }
-            
-            cluster.transform.position += GridMath.ConvertVector2Int(direction);
+
+            cluster.logicalWorldPosition += direction;
             vacatedSpace = true;
             strength--;
         }
 
-        ClusterMoveResult result = new ClusterMoveResult();
+        return new ClusterMoveResult(strength, vacatedSpace);
+    }
 
-        result.remainingStrength = strength;
-        result.vacatedSpace = vacatedSpace;
-        
-        return result;
+    public static void FloatClusterToLegalPosition(
+        WorldCluster cluster,
+        List<WorldCluster> worldClusters,
+        HashSet<Vector2Int> playerWorldPositions
+    )
+    {
+        Vector2Int currentLogicalPosition = cluster.logicalWorldPosition;
+
+        if (isClusterPositionLegal(cluster, currentLogicalPosition, worldClusters, playerWorldPositions))
+        {
+            return;
+        }
+
+        Vector2Int nearestLegalPosition = FindNearestLegalPosition(cluster, worldClusters,playerWorldPositions);
+
+        cluster.logicalWorldPosition = nearestLegalPosition;
+    }
+
+    #endregion
+
+    #region Helpers
+
+    public static bool isClusterPositionLegal(
+        WorldCluster cluster, 
+        Vector2Int candidateLogicalPosition,
+        List<WorldCluster> worldClusters,
+        HashSet<Vector2Int> playerWorldPositions
+    )
+    {
+        foreach (Vector2Int localPixel in cluster.GetPixelPositions())
+        {
+            Vector2Int candidateWorldPixel = candidateLogicalPosition + localPixel;
+
+            if (playerWorldPositions.Contains(candidateWorldPixel))
+            {
+                return false;
+            }
+
+            foreach (WorldCluster worldCluster in worldClusters)
+            {
+                if (worldCluster == null || worldCluster.Equals(cluster))
+                {
+                    continue;
+                }
+
+                foreach (Vector2Int worldPixel in worldCluster.GetWorldPixelPositions())
+                {
+                    if (worldPixel == candidateWorldPixel)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public static Vector2Int FindNearestLegalPosition(
+        WorldCluster cluster, 
+        List<WorldCluster> worldClusters,
+        HashSet<Vector2Int> playerWorldPositions
+    )
+    {
+        List<Vector2Int> adjacents = GridMath.Adjacents();
+
+        Vector2Int startPosition = cluster.logicalWorldPosition;
+
+        for (int distance = 1; distance <= 20; distance++)
+        {
+            foreach (Vector2Int direction in adjacents)
+            {
+                Vector2Int candidatePosition = startPosition + direction * distance;
+
+                if (isClusterPositionLegal(cluster, candidatePosition, worldClusters, playerWorldPositions))
+                {
+                    return candidatePosition;
+                }
+            }
+        }
+
+        return startPosition;
     }
 
     #endregion
@@ -288,4 +372,10 @@ public class ClusterMoveResult
 {
     public int remainingStrength {get; set;}
     public bool vacatedSpace {get; set;}
+
+    public ClusterMoveResult(int strength = 0, bool vacatedSpace = false)
+    {
+        this.remainingStrength = strength;
+        this.vacatedSpace = vacatedSpace;
+    }
 }

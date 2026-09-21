@@ -186,7 +186,7 @@ public class SlapTester : MonoBehaviour
         hit.strikingPixel = fakeStrikingPixel;
         hit.struckCluster = target;
 
-        GridPhysics.Slap(hit, worldClusters);
+        GridPhysics.Slap(hit, worldClusters, new HashSet<Vector2Int>());
 
         Debug.Log(
             target.name +
