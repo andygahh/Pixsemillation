@@ -127,3 +127,6 @@ InitTestScene*.unity*
 # Windows junk
 Thumbs.db
 Desktop.ini
+
+# My Ignores
+Util/
